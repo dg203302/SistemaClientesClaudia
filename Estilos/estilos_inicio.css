@@ -97,6 +97,9 @@ main {
 
 /* Sección KPI */
 #kpi_adeudado_mes {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
 	background: var(--bg-elev);
 	border: 1px solid var(--border);
 	border-radius: 16px;
@@ -171,6 +174,30 @@ main {
 	font-weight: 700;
 	color: var(--heading);
 }
+#operaciones_rec .tabs {
+	display: inline-flex;
+	background: #0b1220;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 4px;
+	gap: 6px;
+	margin-bottom: 12px;
+}
+#operaciones_rec .tab {
+	appearance: none;
+	background: transparent;
+	color: var(--text);
+	border: 0;
+	border-radius: 10px;
+	padding: 8px 12px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.2s ease, color 0.2s ease, transform 0.02s ease;
+}
+#operaciones_rec .tab:hover { background: rgba(255,255,255,0.04); }
+#operaciones_rec .tab:active { transform: translateY(1px); }
+#operaciones_rec .tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+#operaciones_rec .tab.active { background: var(--primary); color: #fff; }
 #lista_operaciones {
 	display: grid;
 	grid-template-columns: 1fr;
@@ -273,7 +300,7 @@ footer{
     font-size: 0.875rem;
     color: var(--muted);
 }
-button img{
-	width: 40px;
-	height: 40px;
+img{
+	width: 25px;
+	height: 25px;
 }
