@@ -273,3 +273,7 @@ footer{
     font-size: 0.875rem;
     color: var(--muted);
 }
+button img{
+	width: 40px;
+	height: 40px;
+}
