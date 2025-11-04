@@ -9,6 +9,7 @@
 <body>
     <header>
         <h1>Panel de Administracion</h1>
+        <!--poner excel compartido-->
         <button onclick="cerrarSesion()">cerrar sesion (PonerEmoji)</button>
     </header>
     <main>
@@ -17,7 +18,7 @@
             <h1 id="total_adeudado_mes">Cargando...</h1>
         </section>
         <section id="btnes_nav">
-            <a href="#">Administrar Clientes</a>
+            <a href="/Plantillas/administracion_clientes.html">Administrar Clientes</a>
             <a href="#">Realizar Operación</a>
         </section>
         <section id="operaciones_rec">
@@ -31,6 +32,7 @@
         <p>&copy;2025 Sistema de Clientes. Todos los derechos reservados.</p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/Scripts/script_inicio.js" type="module"></script>
 </body>
 </html>
