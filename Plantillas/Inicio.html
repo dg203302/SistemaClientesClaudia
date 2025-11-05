@@ -8,8 +8,7 @@
 </head>
 <body>
     <header>
-        <h1>Panel de Administracion</h1>
-        <!--poner excel compartido-->
+        <h1>Inicio</h1>
         <button onclick="cerrarSesion()"><img src="https://img.icons8.com/?size=100&id=zG8bcABNFjRw&format=png&color=000000" alt="Cerrar Sesión"></button>
     </header>
     <main>
@@ -23,12 +22,16 @@
         
         <section id="btnes_nav">
             <a href="/Plantillas/administracion_clientes.html">Administrar Clientes</a>
-            <a href="#">Realizar Operación</a>
+            <a href="#" onclick="realizarOperacion(event)">Realizar Operación</a>
         </section>
+
         <section id="operaciones_rec">
             <div style="display: flex;flex-direction: row; align-items: center; justify-content: space-between;">
                 <h2>Operaciones Recientes</h2>
-                <button onclick="recargarTabla()"><img src="https://img.icons8.com/ios/50/reboot.png" alt="Recargar"></button>
+                <div id="botones">
+                    <button onclick="expandirTabla()">Expandir</button>
+                    <button onclick="recargarTabla()" id="boton_expandir"><img src="https://img.icons8.com/ios/50/reboot.png" alt="Recargar"></button>
+                </div>
             </div>
             <div class="tabs" role="tablist" aria-label="Filtro de operaciones">
                 <button id="btn_ver_deudas" class="tab active" type="button" role="tab" aria-selected="true">Ver Deudas</button>
@@ -37,8 +40,8 @@
             <div id="lista_operaciones">
                 Cargando...
             </div>
-            <!--hacer que la lista tenga una longitud fija, un boton de expandir, que al tocar una deuda o pago cargue un sweetalert para mostrar los datos, formatear el texto de la fecha-->
         </section>
+
     </main>
     <footer>
         <p>&copy;2025 Sistema de Clientes. Todos los derechos reservados.</p>

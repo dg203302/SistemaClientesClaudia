@@ -212,6 +212,27 @@ main {
 	color: var(--text);
 }
 
+/* Operacion item interactivity */
+.op-item {
+	cursor: pointer;
+	transition: background-color 0.12s ease, transform 0.02s ease;
+}
+.op-item:hover { background: rgba(255,255,255,0.03); transform: translateY(-1px); }
+
+.more-indicator {
+	text-align: center;
+	padding: 10px;
+	color: var(--muted);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+/* Optional collapsed container visual (if using CSS based collapse) */
+#lista_operaciones.collapsed {
+	/* Visual cue only; actual item limiting is handled in JS */
+	overflow: hidden;
+}
+
 /* Tipografías generales */
 h1, h2, h3 { letter-spacing: 0; }
 p { color: var(--text); }

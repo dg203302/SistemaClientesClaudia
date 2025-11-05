@@ -88,8 +88,18 @@ async function showInfo(message) {
     });
 }
 
+async function showInfoHTML(message) {
+    const Swal = await ensureSwal();
+    return Swal.fire({
+        title: 'Información',
+        html: message,
+        icon: 'info',
+        confirmButtonText: 'Aceptar'
+    });
+}
+
 if (typeof window !== 'undefined') {
     window.loadSweetAlert2 = loadSweetAlert2;
 }
 export { ensureSwal as loadSweetAlert2, showSuccess, showError, showSuccessToast, showErrorToast };
-export { showInfo as showinfo };
+export { showInfo as showinfo, showInfoHTML };
