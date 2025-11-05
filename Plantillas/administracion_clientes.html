@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/Estilos/estilos_clientes.css">
     <title>Administración de Clientes</title>
 </head>
 <body>
@@ -11,7 +12,38 @@
         <button onclick="Regresar()" aria-label="Regresar"><img src="https://img.icons8.com/?size=100&id=8xhovyHdOQzF&format=png&color=000000" alt="Regresar"></button>
     </header>
     <main>
-
+        <section>
+            <div  id="botones">
+                <button onclick="verTodosClientes()">Ver Todos los Clientes</button>
+                <button onclick="agregarCliente()">Agregar Cliente</button>
+            </div>
+            <input type="text" placeholder="Ingresar nombre / telefono" id="buscarClienteInput">
+            <button onclick="buscarCliente()">Buscar Cliente</button>
+        </section>
+        <section id="listaClientes" style="display: none;">
+        </section>
+        <section id="detallesCliente" style="display: none;">
+            <section id="datosCliente">
+                <h2>Datos del Cliente</h2>
+                <div id="infoCliente">
+                    Cargando...
+                </div>
+                <div id="valoresCliente">
+                    Cargando...
+                    <!--Aqui se mostraran los montos que adeuda y pago el cliente-->
+                </div>
+            </section>
+            <section id="operacionesCliente">
+                <h2>Operaciones del Cliente</h2>
+                <div class="tabs" role="tablist">
+                    <button id="btn_ver_deudas_cliente" class="tab active" type="button" role="tab" aria-selected="true">Ver Deudas</button>
+                    <button id="btn_ver_pagos_cliente" class="tab" type="button" role="tab" aria-selected="false">Ver Pagos</button>
+                </div>
+                <div id="lista_operaciones_cliente">
+                    Cargando...
+                </div>
+            </section>
+        </section>
     </main>
     <footer>
         <p>&copy;2025 Sistema de Clientes. Todos los derechos reservados.</p>
