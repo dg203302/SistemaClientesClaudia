@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.netlify.adminkiosco.twa",
+        "sha256_cert_fingerprints": ["20:6F:B0:78:8B:38:C6:91:64:4C:17:2C:61:F5:00:73:6A:C0:62:C1:DF:2C:7B:63:A3:17:37:9B:B1:66:8C:F4"]
+      }
+    }]
