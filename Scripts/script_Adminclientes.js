@@ -311,7 +311,7 @@ function renderListaOperacionesCliente(container, items, tipo){
         return;
     }
     const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
-    const visibleItems = isExpandedCliente ? items.slice(0,50) : items.slice(0,4);
+    const visibleItems = isExpandedCliente ? items.slice(0,50) : items.slice(0,3);
     visibleItems.forEach(item => {
         const fechaRaw = item.Creado || item.creado || item.fecha || item.created_at || '';
         const fecha = formatDate(fechaRaw);
@@ -331,10 +331,10 @@ function renderListaOperacionesCliente(container, items, tipo){
         card.addEventListener('click', () => showOperacionDetalleCliente(item, tipo));
         container.appendChild(card);
     });
-    if (!isExpandedCliente && items.length > 4){
+    if (!isExpandedCliente && items.length > 3){
         const more = document.createElement('div');
         more.className = 'more-indicator';
-        more.textContent = `Mostrar ${items.length - 4} registros más`;
+        more.textContent = `Mostrar ${items.length - 3} registros más`;
         more.addEventListener('click', () => expandirTablaCliente());
         container.appendChild(more);
     }
