@@ -12,29 +12,57 @@
         <button onclick="Regresar()" aria-label="Regresar"><img src="https://img.icons8.com/?size=100&id=8xhovyHdOQzF&format=png&color=000000" alt="Regresar"></button>
     </header>
     <main>
-        <section>
+        <section id="accionesClientes" style="display: flex; flex-direction: column; align-items: stretch; gap: 10px;">
             <div  id="botones">
                 <button onclick="verTodosClientes()">Ver Todos los Clientes</button>
                 <button onclick="agregarCliente()">Agregar Cliente</button>
             </div>
             <input type="text" placeholder="Ingresar nombre / telefono" id="buscarClienteInput">
-            <button onclick="buscarCliente()">Buscar Cliente</button>
         </section>
+
         <section id="listaClientes" style="display: none;">
+            <div id="cabeceraLista" style="display: flex;flex-direction: row; align-items: center; justify-content: space-between;">
+                <h1>Lista de Clientes</h1>
+                <button onclick="cerrarListaClientes()" aria-label="Cerrar lista">❌</button>
+            </div>
+            <div id="contenedorListaClientes">
+
+            </div>
         </section>
+
         <section id="detallesCliente" style="display: none;">
-            <section id="datosCliente">
+            <div id="headerDetalles" style="display: flex;flex-direction: row; align-items: center; justify-content: space-between;">
                 <h2>Datos del Cliente</h2>
-                <div id="infoCliente">
-                    Cargando...
+                <button onclick="cerrarDetallesCliente()" aria-label="Cerrar detalles">❌</button>
+            </div>
+            <section id="datosCliente">
+                <p class="subtitle muted">Resumen e información del cliente</p>
+                <div id="infoCliente" style="margin:10px;">
+                    <p id="nombreCliente">Nombre: <br>Cargando...</p>
+                    <p id="telefonoCliente">Teléfono: <br>Cargando...</p>
                 </div>
                 <div id="valoresCliente">
-                    Cargando...
-                    <!--Aqui se mostraran los montos que adeuda y pago el cliente-->
+                    <div class="valor-card success">
+                        <span class="label">Total Pagado</span>
+                        <span id="montototalPagado" class="amount">0.00</span>
+                    </div>
+                    <div class="valor-card danger" style="display: flex;
+                    flex-direction: row; justify-content: space-between;">
+                        <div>
+                            <span class="label">Total Adeudado</span>
+                            <span id="montototalAdeudado" class="amount">0.00</span>
+                        </div>
+                        <button onclick="enviarDeudaTotal()">Enviar Deuda por Whatsapp</button>
+                    </div>
                 </div>
             </section>
             <section id="operacionesCliente">
-                <h2>Operaciones del Cliente</h2>
+                <div class="section-header" style="display: flex;flex-direction: row; align-items: center; justify-content: space-between;">
+                    <h2>Operaciones del Cliente</h2>
+                    <div class="actions">
+                        <button id="btn_refrescar_cliente" class="btn" type="button">Refrescar</button>
+                    </div>
+                </div>
                 <div class="tabs" role="tablist">
                     <button id="btn_ver_deudas_cliente" class="tab active" type="button" role="tab" aria-selected="true">Ver Deudas</button>
                     <button id="btn_ver_pagos_cliente" class="tab" type="button" role="tab" aria-selected="false">Ver Pagos</button>
@@ -44,6 +72,7 @@
                 </div>
             </section>
         </section>
+
     </main>
     <footer>
         <p>&copy;2025 Sistema de Clientes. Todos los derechos reservados.</p>

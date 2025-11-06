@@ -27,6 +27,7 @@ body{
   color:var(--text);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
+  overflow-x: hidden; /* Evitar desbordes horizontales */
 }
 
 header{display:flex;align-items:center;justify-content:space-between;padding:20px;max-width:1100px;margin:0 auto}
@@ -37,16 +38,21 @@ main{max-width:1100px;margin:16px auto;padding:0 16px 80px}
 section{background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 6px 24px rgba(0,0,0,0.2)}
 
 #botones{display:flex;gap:8px;margin-bottom:12px}
-#botones button{background:var(--primary);border:0;padding:10px 12px;border-radius:10px;color:#fff;cursor:pointer}
+#botones{flex-wrap:wrap}
+#botones button{background:var(--primary);border:0;padding:10px 12px;border-radius:10px;color:#fff;cursor:pointer;white-space:nowrap}
 #botones button:hover{background:var(--primary-600)}
 
 /* Search input */
-#buscarClienteInput{width:100%;max-width:480px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input);color:var(--text);margin-right:8px}
+#buscarClienteInput{width:100%;max-width:480px;flex:1 1 auto;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input);color:var(--text);margin-right:8px;min-width:0}
 
 /* Results list */
 .clients-list{display:grid;gap:8px;margin-top:12px}
+#contenedorListaClientes{display:grid;gap:8px;margin-top:12px}
 .client-item{background:#0b1220;border:1px solid var(--border);padding:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
-.client-item .meta{color:var(--muted);font-size:0.9rem}
+.client-item{gap:10px;min-width:0}
+.client-item .meta{color:var(--muted);font-size:0.9rem;overflow-wrap:anywhere}
+.client-item > div{min-width:0}
+.client-item *{min-width:0}
 .client-item button{background:transparent;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:8px}
 
 footer{position:fixed;bottom:0;left:0;right:0;background:var(--bg);text-align:center;padding:8px;color:var(--muted)}
@@ -54,5 +60,213 @@ footer{position:fixed;bottom:0;left:0;right:0;background:var(--bg);text-align:ce
 /* Small screens adjustments */
 @media (max-width:640px){
   header, main{padding-left:12px;padding-right:12px}
-  #botones{flex-direction:column}
+  #accionesClientes{flex-direction:column;align-items:stretch;gap:10px}
+  #botones{flex-direction:row;flex-wrap:wrap}
+  #buscarClienteInput{max-width:100%;margin-right:0}
 }
+#accionesClientes {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+img{
+    width: 25px;
+    height: 25px;
+}
+header img{width:22px;height:22px}
+
+/* SweetAlert2 -> estilos que siguen la estética oscura de esta hoja
+   Se aplican al modal que usa la función `agregarCliente` en el admin.
+*/
+.swal2-popup{
+  background:var(--bg-elev) !important;
+  color:var(--text) !important;
+  border:1px solid var(--border) !important;
+  box-shadow:0 12px 40px rgba(2,6,23,0.6) !important;
+  border-radius:12px !important;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial !important;
+  max-width:520px !important;
+}
+
+.swal2-title{
+  color:var(--heading) !important;
+  font-weight:600 !important;
+  margin-bottom:6px !important;
+}
+
+.swal2-html-container{
+  color:var(--text) !important;
+  font-size:0.95rem !important;
+}
+
+.swal2-html-container label{
+  display:block;
+  margin:8px 0 6px 0;
+  color:var(--muted) !important;
+  font-size:0.95rem;
+}
+
+.swal2-content{color:var(--muted) !important}
+
+.swal2-input, .swal2-textarea{
+  background:var(--input) !important;
+  color:var(--text) !important;
+  border:1px solid var(--border) !important;
+  box-sizing:border-box !important;
+}
+
+.swal2-input:focus, .swal2-textarea:focus{
+  outline:none !important;
+  box-shadow:0 0 0 5px var(--ring) !important;
+}
+
+.swal2-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+
+.swal2-confirm{
+  background:var(--primary) !important;
+  color:#fff !important;
+  border:none !important;
+  padding:10px 14px !important;
+  border-radius:10px !important;
+  box-shadow:none !important;
+}
+.swal2-confirm:hover{background:var(--primary-600) !important}
+
+.swal2-deny, .swal2-cancel{
+  background:transparent !important;
+  color:var(--text) !important;
+  border:1px solid var(--border) !important;
+  padding:8px 12px !important;
+  border-radius:8px !important;
+}
+
+.swal2-footer{color:var(--muted) !important; font-size:0.85rem; margin-top:8px}
+.swal2-close{color:var(--muted) !important}
+
+/* Icon colors */
+.swal2-icon-success{background:transparent !important; color:var(--success) !important}
+.swal2-icon-error{background:transparent !important; color:var(--danger) !important}
+
+/* Mobile adjustments for smaller modals */
+@media (max-width:420px){
+  .swal2-popup{margin:12px}
+  .swal2-actions{flex-direction:column-reverse}
+  .swal2-confirm, .swal2-cancel{width:100%}
+}
+
+/* Botones genéricos (alineados con estilos_inicio.css) */
+button,
+.btn {
+  appearance: none;
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 600;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.02s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.25);
+}
+button:hover, .btn:hover { background: var(--primary-600); }
+button:active, .btn:active { transform: translateY(1px); }
+button:focus-visible, .btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Tabs del panel de operaciones del cliente (coherentes con Inicio) */
+#operacionesCliente .tabs {
+  display: inline-flex;
+  background: #0b1220;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+#operacionesCliente .tab {
+  appearance: none;
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.02s ease;
+  flex: 1 1 auto;
+  min-width: 140px;
+  text-align:center;
+}
+#operacionesCliente .tab:hover { background: rgba(255,255,255,0.04); }
+#operacionesCliente .tab:active { transform: translateY(1px); }
+#operacionesCliente .tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+#operacionesCliente .tab.active { background: var(--primary); color: #fff; }
+
+/* Botón expandir del cliente */
+#btn_expandir_cliente { margin: 8px 0 12px 0; }
+
+/* Detalles del cliente: colocar montos a la derecha, en tarjetas compactas */
+#detallesCliente { display: grid; gap: 16px; }
+#datosCliente { 
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  overflow: hidden; /* Evitar desbordes internos */
+}
+#datosCliente .subtitle{ margin: 4px 0 12px; color: var(--muted); }
+#datosCliente h2 { margin: 0 0 8px 0; color: var(--heading); }
+#infoCliente { color: var(--text); display:grid; grid-template-columns: 1fr 1fr; gap:12px }
+#infoCliente p{margin:0; overflow-wrap:anywhere}
+
+/* Contenedor de valores a la derecha */
+#valoresCliente {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 12px;
+  min-width:0;
+}
+.valor-card {
+  background: #0b1220;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 6px 24px rgba(0,0,0,0.18);
+  min-height:72px;
+}
+.valor-card .label { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+.valor-card .amount { font-weight: 800; font-size: 1.5rem; line-height: 1.75rem; }
+.valor-card.success .amount { color: var(--success); }
+.valor-card.danger .amount { color: var(--danger); }
+
+@media (max-width: 640px){
+  #infoCliente{grid-template-columns: 1fr}
+  #valoresCliente { justify-content: stretch; flex-direction: column; }
+  .valor-card { width: 100%; }
+}
+
+/* Header de la sección Operaciones del Cliente */
+#operacionesCliente .section-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:8px;
+}
+#operacionesCliente .section-header .actions{ display:flex; gap:8px; }
+
+/* Lista de operaciones: evitar overflow */
+#lista_operaciones_cliente{ min-width:0 }
+.op-item{ background:#0b1220; border:1px solid var(--border); border-radius:12px; padding:12px }
+.op-item .muted{ color:var(--muted) }

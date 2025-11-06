@@ -61,7 +61,9 @@ async function showSuccessToast(message) {
         position: 'top-end',
         showConfirmButton: false,
         timer: 3000,
-        timerProgressBar: true
+        timerProgressBar: true,
+        // Asegurar que quede por encima de headers/botones fijos
+        zIndex: 20000
     });
     return Toast.fire({ icon: 'success', title: message });
 }
@@ -73,7 +75,9 @@ async function showErrorToast(message) {
         position: 'top-end',
         showConfirmButton: false,
         timer: 3000,
-        timerProgressBar: true
+        timerProgressBar: true,
+        // Asegurar que quede por encima de headers/botones fijos
+        zIndex: 20000
     });
     return Toast.fire({ icon: 'error', title: message });
 }
