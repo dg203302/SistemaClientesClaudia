@@ -9,5 +9,31 @@
   "start_url": "https://adminkiosco.netlify.app/",
   "theme_color": "#ffffff",
   "id": "1739",
-  "description": "App para adminstrar cuentas corrientes de clientes de un negocio"
+  "description": "App para adminstrar cuentas corrientes de clientes de un negocio",
+  "icons": [
+    {
+      "src": "icons/manifest-icon-192.maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/manifest-icon-192.maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/manifest-icon-512.maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/manifest-icon-512.maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }
