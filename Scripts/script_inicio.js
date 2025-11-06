@@ -225,7 +225,7 @@ async function openRegistroOperacion(tipo){
                         const { error: updError } = await client
                             .from('Clientes')
                             .update({ Deuda_Activa: newDeuda })
-                            .eq('Telefono', phoneNorm);
+                            .eq('Telefono', phoneValue);
                         if (updError){
                             console.error('Error al actualizar deuda del cliente', updError);
                             window.Swal.showValidationMessage('Error al actualizar deuda del cliente: ' + (updError.message || updError));
