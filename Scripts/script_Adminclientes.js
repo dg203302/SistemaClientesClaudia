@@ -152,7 +152,7 @@ function insertarClienteEnLista(cliente, contenedor){
         // Formatear totales como ARS
         const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
         const totalPagado = await calcularMontoTotalPagado(telefono);
-        const totalAdeudado = await calcularMontoTotalAdeudado(telefono);
+        const totalAdeudado = cliente.Deuda_Activa !== undefined ? Number(cliente.Deuda_Activa) || 0 : 0;
         document.getElementById('montototalPagado').innerHTML = formatter.format(totalPagado);
         document.getElementById('montototalAdeudado').innerHTML = formatter.format(totalAdeudado);
 
@@ -213,17 +213,6 @@ async function calcularMontoTotalPagado(telefono){
         return 0;
     }
     return (data || []).reduce((total, pago) => total + (Number(pago.Monto) || 0), 0);
-}
-async function calcularMontoTotalAdeudado(telefono){
-    const {data, error} = await supabase
-        .from('Deudas')
-        .select('Monto')
-        .eq('Telefono_cliente', telefono);
-    if (error) {
-        showErrorToast('Error al obtener las deudas: ' + error.message);
-        return 0;
-    }
-    return (data || []).reduce((total, deuda) => total + (Number(deuda.Monto) || 0), 0);
 }
 
 // -------- Operaciones del cliente seleccionado (tabs, lista, expandir, detalle) --------

@@ -159,26 +159,98 @@ async function openRegistroOperacion(tipo){
     </div>
     `;
 
-    const { value: formValues } = await window.Swal.fire({
+    const result = await window.Swal.fire({
         title: tipo === 'deuda' ? 'Registrar Deuda' : 'Registrar Pago',
         html,
         focusConfirm: false,
         showCancelButton: true,
         confirmButtonText: 'Registrar',
-        preConfirm: () => {
+        showLoaderOnConfirm: true,
+        // preConfirm will run the insertion/update while keeping the modal open and showing a loader on the Registrar button
+        preConfirm: async () => {
             const nameInput = document.getElementById('clientSearch');
             const catInput = document.getElementById('opCategory');
             const amountInput = document.getElementById('opAmount');
             const name = nameInput ? nameInput.value.trim() : '';
-            const phone = ''; 
             const categoria = catInput ? catInput.value.trim() : '';
-            const monto = amountInput ? parseFloat(amountInput.value) : 0; 
-            
+            const monto = amountInput ? parseFloat(amountInput.value) : 0;
+
             if (isNaN(monto) || monto <= 0) {
                 window.Swal.showValidationMessage('Ingrese un monto válido mayor a 0');
                 return null;
             }
-            return { name, phone, categoria, monto }; 
+
+            // Determinar teléfono seleccionado (si el usuario eligió de la lista)
+            const matchesEl = document.getElementById('clientMatches');
+            let phoneValue = null;
+            if (matchesEl && matchesEl.selectedClient) phoneValue = matchesEl.selectedClient.Telefono ?? null;
+            if (!phoneValue) {
+                const possible = name || '';
+                const digits = (possible.match(/\d+/g) || []).join('');
+                if (digits.length >= 6) phoneValue = digits;
+            }
+
+            const payload = {
+                Monto: monto,
+                Categoria: categoria,
+                Telefono_cliente: phoneValue,
+            };
+
+            try{
+                const table = tipo === 'deuda' ? 'Deudas' : 'Pagos';
+                const { data, error } = await client.from(table).insert(payload).select();
+                if (error){
+                    window.Swal.showValidationMessage('Error al registrar: ' + (error.message || error));
+                    return null;
+                }
+
+                // Actualizar Deuda_Activa según tipo
+                if (phoneValue) {
+                    const { data: clientData, error: selectError } = await client
+                        .from('Clientes')
+                        .select('Deuda_Activa')
+                        .eq('Telefono', phoneValue)
+                        .single();
+                    if (selectError) {
+                        console.error('Error al obtener deuda actual del cliente', selectError);
+                        // No abort registration, but inform user
+                        window.Swal.showValidationMessage('Error al obtener datos del cliente: ' + (selectError.message || selectError));
+                        return null;
+                    }
+
+                    const current = Number(clientData?.Deuda_Activa ?? 0) || 0;
+                    if (tipo === 'deuda'){
+                        const added = Number(payload.Monto) || 0;
+                        const newDeuda = parseFloat((current + added).toFixed(2));
+                        const { error: updError } = await client
+                            .from('Clientes')
+                            .update({ Deuda_Activa: newDeuda })
+                            .eq('Telefono', phoneNorm);
+                        if (updError){
+                            console.error('Error al actualizar deuda del cliente', updError);
+                            window.Swal.showValidationMessage('Error al actualizar deuda del cliente: ' + (updError.message || updError));
+                            return null;
+                        }
+                    } else if (tipo === 'pago'){
+                        const deducted = Number(payload.Monto) || 0;
+                        const newDeuda = parseFloat(Math.max(0, current - deducted).toFixed(2));
+                        const { error: updError } = await client
+                            .from('Clientes')
+                            .update({ Deuda_Activa: newDeuda })
+                            .eq('Telefono', phoneValue);
+                        if (updError){
+                            console.error('Error al actualizar deuda del cliente', updError);
+                            window.Swal.showValidationMessage('Error al actualizar deuda del cliente: ' + (updError.message || updError));
+                            return null;
+                        }
+                    }
+                }
+                return { ok: true };
+            }catch(err){
+                console.error(err);
+                window.Swal.showValidationMessage('Error al registrar la operación');
+                return null;
+            }
         },
         didOpen: () => {
             // wire up search
@@ -338,7 +410,6 @@ async function openRegistroOperacion(tipo){
             }));
 
             if (eq) eq.addEventListener('click', handleEquals);
-
             if (clear) clear.addEventListener('click', clearCalculator);
 
             // Sincronizar el input de monto con la lógica de la calculadora al inicio
@@ -348,37 +419,11 @@ async function openRegistroOperacion(tipo){
         }
     });
 
-    if (!formValues) return;
-
-    // Try to insert into Supabase
-    let phoneValue = null;
-    const matchesEl = document.getElementById('clientMatches');
-    if (matchesEl && matchesEl.selectedClient) phoneValue = matchesEl.selectedClient.Telefono ?? null;
-    if (!phoneValue) {
-        const possible = formValues.name || '';
-        const digits = (possible.match(/\d+/g) || []).join('');
-        if (digits.length >= 6) phoneValue = digits;
-    }
-
-    const payload = {
-        Monto: formValues.monto,
-        Categoria: formValues.categoria || null,
-        Telefono_cliente: phoneValue,
-    };
-
-    try{
-        const table = tipo === 'deuda' ? 'Deudas' : 'Pagos';
-        const { data, error } = await client.from(table).insert(payload).select();
-        if (error){
-            showErrorToast('Error al registrar: ' + (error.message || error));
-            return;
-        }
+    // Si el preConfirm devolvió ok, mostrar toast y recargar UI
+    if (result && result.isConfirmed && result.value && result.value.ok) {
         showSuccessToast('Operación registrada correctamente');
-        recargarMontos();
-        recargarTabla();
-    }catch(err){
-        console.error(err);
-        showErrorToast('Error al registrar la operación');
+        try { await recargarMontos(); } catch(e){}
+        try { await recargarTabla(); } catch(e){}
     }
 }
 
@@ -555,22 +600,15 @@ async function recargarTabla() {
     }
 }
 async function cargarMontoAdeudadoMensual(){
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
-
-        const { data, error } = await client
-      .from('Deudas')
-      .select('Monto')
-      .gte('Creado', startOfMonth)
-      .lt('Creado', startOfNextMonth);
-
+    const { data, error } = await client
+      .from('Clientes')
+      .select('Deuda_Activa');
     if (error) {
       showErrorToast(error.message);
       return 0;
     }
     console.log(data);
-    const totalMensual = (data || []).reduce((acc, row) => acc + (Number(row.Monto ?? row.monto) || 0), 0);
+    const totalMensual = (data || []).reduce((acc, row) => acc + (Number(row.Deuda_Activa) || 0), 0);
     const indicadorMonto = document.getElementById('total_adeudado_mes');
     indicadorMonto.textContent = totalMensual.toFixed(2);
     actualizarColor(indicadorMonto);
