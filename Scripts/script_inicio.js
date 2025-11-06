@@ -31,38 +31,7 @@ window.expandirTabla = function(){
 // Muestra un modal para elegir entre registrar Deuda o Pago.
 window.realizarOperacion = async function(e){
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    // Asegurarse de que SweetAlert2 esté cargado (window.loadSweetAlert2 está expuesto por sweetalert2.js)
-    try{
-        if (typeof window.loadSweetAlert2 === 'function') await window.loadSweetAlert2();
-    }catch(err){
-        console.error('No se pudo cargar SweetAlert2', err);
-    }
-
-    // Si Swal está disponible, usarlo para ofrecer opciones.
-    if (window.Swal){
-        const result = await window.Swal.fire({
-            title: 'Registrar Operación',
-            text: '¿Qué tipo de operación deseas registrar?',
-            showDenyButton: true,
-            showCancelButton: true,
-            confirmButtonText: 'Registrar Deuda',
-            denyButtonText: 'Registrar Pago',
-            cancelButtonText: 'Cancelar',
-            customClass: { popup: 'swal2-popup' }
-        });
-
-        if (result.isConfirmed){
-            await openRegistroOperacion('deuda');
-        } else if (result.isDenied){
-            await openRegistroOperacion('pago');
-        }
-        return;
-    }
-
-    // Fallback si Swal no está disponible
-    const choice = confirm('¿Deseas registrar una Deuda? OK = Deuda, Cancel = Pago');
-    if (choice) showSuccessToast('Seleccionaste: Registrar Deuda');
-    else showSuccessToast('Seleccionaste: Registrar Pago');
+   await openRegistroOperacion();
 }
 async function cargarPagosRecientes(){
     const { data, error } = await client
@@ -120,8 +89,7 @@ function setActiveTab(tipo){
 
 }
 
-async function openRegistroOperacion(tipo){
-    // tipo: 'deuda' | 'pago'
+async function openRegistroOperacion(){
     await window.loadSweetAlert2();
     const html = `
     <div style="display:grid; gap:8px; text-align:left;">
@@ -156,21 +124,34 @@ async function openRegistroOperacion(tipo){
             <button type="button" id="calc-eq" style="height:55px; background-color:#28a745 !important; color:white;">=</button>
         </div>
         <small class="muted">Calculadora: Solo permite Suma (+), Resta (-) e Igual (=)</small>
+        <div>
+        <div style="display:flex; gap:12px; align-items:center; margin-top:8px;">
+            <label style="display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;">
+                <input type="checkbox" id="chkPago" onclick="const d=document.getElementById('chkDeuda'); if(this.checked) d.checked=false;">
+                Pago
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;">
+                <input type="checkbox" id="chkDeuda" onclick="const p=document.getElementById('chkPago'); if(this.checked) p.checked=false;">
+                Deuda
+            </label>
+        </div>
+        </div>
     </div>
     `;
 
     const result = await window.Swal.fire({
-        title: tipo === 'deuda' ? 'Registrar Deuda' : 'Registrar Pago',
+        title: 'Registrar Operación',
         html,
         focusConfirm: false,
         showCancelButton: true,
-        confirmButtonText: 'Registrar',
+        confirmButtonText: 'Registrar Pago',
+        cancelButtonText: 'Cancelar',
         showLoaderOnConfirm: true,
-        // preConfirm will run the insertion/update while keeping the modal open and showing a loader on the Registrar button
         preConfirm: async () => {
             const nameInput = document.getElementById('clientSearch');
             const catInput = document.getElementById('opCategory');
             const amountInput = document.getElementById('opAmount');
+            const tipo = document.getElementById('chkPago').checked ? 'pago' : 'deuda';
             const name = nameInput ? nameInput.value.trim() : '';
             const categoria = catInput ? catInput.value.trim() : '';
             const monto = amountInput ? parseFloat(amountInput.value) : 0;
@@ -179,8 +160,6 @@ async function openRegistroOperacion(tipo){
                 window.Swal.showValidationMessage('Ingrese un monto válido mayor a 0');
                 return null;
             }
-
-            // Determinar teléfono seleccionado (si el usuario eligió de la lista)
             const matchesEl = document.getElementById('clientMatches');
             let phoneValue = null;
             if (matchesEl && matchesEl.selectedClient) phoneValue = matchesEl.selectedClient.Telefono ?? null;
@@ -195,7 +174,6 @@ async function openRegistroOperacion(tipo){
                 Categoria: categoria,
                 Telefono_cliente: phoneValue,
             };
-
             try{
                 const table = tipo === 'deuda' ? 'Deudas' : 'Pagos';
                 const { data, error } = await client.from(table).insert(payload).select();
