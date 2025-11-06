@@ -312,7 +312,9 @@ async function openRegistroOperacion(tipo){
 
             function updateDisplay(value) {
                 currentDisplay = String(value);
-                amount.value = currentDisplay; 
+                amount.value = currentDisplay;
+                // Al actualizar la pantalla, limpiamos cualquier placeholder previo
+                if (amount) amount.placeholder = '';
             }
 
             function calculate(first, second, op) {
@@ -368,6 +370,10 @@ async function openRegistroOperacion(tipo){
                     updateDisplay(firstOperand.toFixed(2));
                 }
 
+                // Establecer el valor previo como placeholder para que quede visible como referencia
+                // sin borrar el contenido actual del input.
+                if (amount) amount.placeholder = String(currentDisplay);
+
                 waitingForSecondOperand = true;
                 operator = nextOperator;
             }
@@ -381,7 +387,9 @@ async function openRegistroOperacion(tipo){
                 
                 const result = calculate(firstOperand, secondOperand, operator);
                 
-                updateDisplay(result.toFixed(2)); 
+                updateDisplay(result.toFixed(2));
+                // Al finalizar la operación, limpiar el placeholder pues mostramos el resultado
+                if (amount) amount.placeholder = '';
                 firstOperand = result;
                 operator = null;
                 waitingForSecondOperand = true;
@@ -393,6 +401,7 @@ async function openRegistroOperacion(tipo){
                 operator = null;
                 waitingForSecondOperand = false;
                 updateDisplay(currentDisplay);
+                if (amount) amount.placeholder = '';
             }
 
             // Event Listeners
