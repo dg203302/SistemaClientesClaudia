@@ -145,27 +145,34 @@ function insertarClienteEnLista(cliente, contenedor){
         </div>
     `;
     card.addEventListener('click', async () => {
-        const contenedorDetalles = document.getElementById('detallesCliente');
-        contenedorDetalles.style.display = 'block';
-        document.getElementById('nombreCliente').innerHTML = `Nombre: <br>${nombre}`;
-        document.getElementById('telefonoCliente').innerHTML = `Teléfono: <br>${telefono}`;
-        // Formatear totales como ARS
-        const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
-        const totalPagado = await calcularMontoTotalPagado(telefono);
-        const totalAdeudado = cliente.Deuda_Activa !== undefined ? Number(cliente.Deuda_Activa) || 0 : 0;
-        document.getElementById('montototalPagado').innerHTML = formatter.format(totalPagado);
-        document.getElementById('montototalAdeudado').innerHTML = formatter.format(totalAdeudado);
+        // Mostrar detalles en modal que replica la UI del div de detalles
+        try {
+            await mostrarDetallesClienteModal(cliente);
+        } catch (err) {
+            console.error('Error mostrando modal, fallback al panel:', err);
+            // Fallback: abrir panel de detalles como antes
+            const contenedorDetalles = document.getElementById('detallesCliente');
+            contenedorDetalles.style.display = 'block';
+            document.getElementById('nombreCliente').innerHTML = `Nombre: <br>${nombre}`;
+            document.getElementById('telefonoCliente').innerHTML = `Teléfono: <br>${telefono}`;
+            // Formatear totales como ARS
+            const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+            const totalPagado = await calcularMontoTotalPagado(telefono);
+            const totalAdeudado = cliente.Deuda_Activa !== undefined ? Number(cliente.Deuda_Activa) || 0 : 0;
+            document.getElementById('montototalPagado').innerHTML = formatter.format(totalPagado);
+            document.getElementById('montototalAdeudado').innerHTML = formatter.format(totalAdeudado);
 
-        // Guardar estado del cliente actual
-        currentClienteTelefono = telefono;
-        currentClienteNombre = nombre;
-        currentClienteOpView = 'deudas';
-        isExpandedCliente = false;
+            // Guardar estado del cliente actual
+            currentClienteTelefono = telefono;
+            currentClienteNombre = nombre;
+            currentClienteOpView = 'deudas';
+            isExpandedCliente = false;
 
-        // Preparar tabs y botones (expandir/refrescar/cerrar) para el panel del cliente
-        prepararTabsOperacionesCliente();
-        // Render inicial (deudas)
-        await mostrarOperacionesCliente('deudas');
+            // Preparar tabs y botones (expandir/refrescar/cerrar) para el panel del cliente
+            prepararTabsOperacionesCliente();
+            // Render inicial (deudas)
+            await mostrarOperacionesCliente('deudas');
+        }
     });
 
     // Borrar cliente (evitar que dispare el click del card)
@@ -365,6 +372,214 @@ async function showOperacionDetalleCliente(item, tipo){
     try{ await showInfoHTML(html); } 
     catch(e){ alert(html.replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '')); }
 }
+
+// calcula deuda total del cliente consultando la tabla Deudas
+async function calcularMontoTotalAdeudado(telefono){
+        if (!telefono) return 0;
+        const { data, error } = await supabase
+                .from('Deudas')
+                .select('Monto')
+                .eq('Telefono_cliente', telefono);
+        if (error) {
+                console.error('Error al calcular deuda total', error);
+                return 0;
+        }
+        return (data || []).reduce((acc, r) => acc + (Number(r.Monto) || 0), 0);
+}
+
+// Mostrar detalles del cliente en un modal que replica la UI/funcionalidad del div de detalles
+async function mostrarDetallesClienteModal(cliente){
+    if (!cliente) return;
+    const nombre = cliente.Nombre ?? cliente.nombre ?? '';
+    const telefono = normalizePhone(cliente.Telefono ?? cliente.telefono ?? '');
+
+    // actualizar estado global
+    currentClienteTelefono = telefono;
+    currentClienteNombre = nombre;
+    currentClienteOpView = 'deudas';
+    isExpandedCliente = true; // mostrar todo directamente
+
+    ensureClienteModalStyles();
+
+    // Si ya existe, primero eliminar para recrear limpio
+    const old = document.getElementById('clienteModalOverlay');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'clienteModalOverlay';
+    overlay.innerHTML = `
+        <div class="cliente-modal" role="dialog" aria-modal="true" aria-label="Detalles del cliente">
+            <div class="cliente-modal__header">
+                <h2 class="cliente-modal__title">${escapeHtml(nombre)}</h2>
+                <button type="button" class="cliente-modal__close" aria-label="Cerrar" id="clienteModalCloseBtn">×</button>
+            </div>
+            <div class="cliente-modal__body">
+                <div class="cliente-modal__info">
+                    <div class="cliente-modal__dato"><strong>Teléfono:</strong> <span>${escapeHtml(telefono)}</span></div>
+                    <div class="cliente-modal__total">
+                        <span class="label">Deuda Activa</span>
+                        <div id="modal_montototalAdeudado" class="total-number">$ 0</div>
+                    </div>
+                </div>
+                <div class="cliente-modal__toolbar">
+                    <div class="tabs" role="tablist">
+                        <button id="modal_btn_ver_deudas" class="tab active" type="button">Deudas</button>
+                        <button id="modal_btn_ver_pagos" class="tab" type="button">Pagos</button>
+                    </div>
+                    <div class="actions">
+                        <button id="modal_btn_whatsapp" class="btn sm alt">WhatsApp</button>
+                        <button id="modal_btn_refrescar" class="btn sm">Refrescar</button>
+                    </div>
+                </div>
+                <div id="modal_lista_operaciones" class="cliente-modal__lista">Cargando...</div>
+            </div>
+            <div class="cliente-modal__footer">
+                <span class="hint">Click fuera o ESC para cerrar</span>
+            </div>
+        </div>`;
+
+    document.body.appendChild(overlay);
+
+    const elTotalAdeudado = overlay.querySelector('#modal_montototalAdeudado');
+    const btnWhats = overlay.querySelector('#modal_btn_whatsapp');
+    const btnRefrescar = overlay.querySelector('#modal_btn_refrescar');
+    const btnDeudas = overlay.querySelector('#modal_btn_ver_deudas');
+    const btnPagos = overlay.querySelector('#modal_btn_ver_pagos');
+    const listaCont = overlay.querySelector('#modal_lista_operaciones');
+    const btnClose = overlay.querySelector('#clienteModalCloseBtn');
+
+    const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+    let modalView = 'deudas';
+
+    async function updateTotals(){
+        const adeudado = (cliente.Deuda_Activa !== undefined) ? Number(cliente.Deuda_Activa) || 0 : await calcularMontoTotalAdeudado(telefono);
+        if (elTotalAdeudado) elTotalAdeudado.textContent = formatter.format(adeudado);
+    }
+
+    async function loadOps(view){
+        if (!listaCont) return;
+        listaCont.textContent = 'Cargando...';
+        try {
+            const tabla = (view === 'deudas') ? 'Deudas' : 'Pagos';
+            const { data, error } = await supabase.from(tabla)
+                .select('*')
+                .eq('Telefono_cliente', telefono)
+                .order('Creado', { ascending: false });
+            if (error){
+                listaCont.textContent = 'Error al cargar.';
+                return;
+            }
+            const items = data || [];
+            listaCont.innerHTML = '';
+            const formatterLocal = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+            if (items.length === 0){
+                listaCont.textContent = 'No hay registros.';
+                return;
+            }
+            items.slice(0,200).forEach(item => { // hard cap para no congelar UI
+                const fecha = formatDate(item.Creado || item.fecha || item.creado || '');
+                const monto = Number(item.Monto ?? item.monto ?? 0) || 0;
+                const card = document.createElement('div');
+                card.className = 'op-item';
+                card.tabIndex = 0;
+                card.innerHTML = `<div class="op-row"><div><div class="op-kind ${view==='deudas' ? 'neg' : 'pos'}">${view==='deudas' ? 'Deuda' : 'Pago'}</div><div class="op-date">${escapeHtml(String(fecha))}</div></div><div class="op-monto">${formatterLocal.format(monto)}</div></div>`;
+                card.addEventListener('click', () => showOperacionDetalleCliente(item, view));
+                card.addEventListener('keypress', (e)=>{ if(e.key==='Enter') showOperacionDetalleCliente(item, view); });
+                listaCont.appendChild(card);
+            });
+            if (items.length > 200){
+                const more = document.createElement('div');
+                more.className = 'more-indicator';
+                more.textContent = `Mostrando 200 de ${items.length} registros (filtra para ver menos)`;
+                listaCont.appendChild(more);
+            }
+        } catch(err){
+            console.error(err);
+            listaCont.textContent = 'Error al cargar.';
+        }
+    }
+
+    function setActiveTabs(){
+        btnDeudas?.classList.toggle('active', modalView==='deudas');
+        btnPagos?.classList.toggle('active', modalView==='pagos');
+    }
+
+    // Eventos
+    btnWhats?.addEventListener('click', () => {
+        const mensaje = `Hola ${currentClienteNombre}, tu deuda total es de ${elTotalAdeudado ? elTotalAdeudado.textContent : ''}.`;
+        const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, '_blank');
+    });
+    btnRefrescar?.addEventListener('click', async () => { await updateTotals(); await loadOps(modalView); });
+    btnDeudas?.addEventListener('click', async () => { modalView = 'deudas'; setActiveTabs(); await loadOps(modalView); });
+    btnPagos?.addEventListener('click', async () => { modalView = 'pagos'; setActiveTabs(); await loadOps(modalView); });
+    btnClose?.addEventListener('click', closeModalCliente);
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModalCliente(); });
+    document.addEventListener('keydown', escListenerOnce);
+
+    async function init(){
+        setActiveTabs();
+        await updateTotals();
+        await loadOps(modalView);
+    }
+    init();
+}
+
+function escListenerOnce(e){
+    if (e.key === 'Escape'){
+        closeModalCliente();
+    }
+}
+
+function closeModalCliente(){
+    const overlay = document.getElementById('clienteModalOverlay');
+    if (overlay){
+        overlay.remove();
+    }
+    document.removeEventListener('keydown', escListenerOnce);
+}
+
+function ensureClienteModalStyles(){
+    if (document.getElementById('clienteModalStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'clienteModalStyles';
+    style.textContent = `
+    #clienteModalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:32px 20px;overflow-y:auto;}
+    /* Asegurar que SweetAlert2 quede por encima del overlay del cliente */
+    .swal2-container{z-index:10050 !important;}
+    .cliente-modal{background:var(--bg-elev);color:var(--text);width:840px;max-width:100%;border-radius:14px;border:1px solid var(--border);box-shadow:0 8px 28px -4px rgba(0,0,0,.28);display:flex;flex-direction:column;font-size:14px;}
+    .cliente-modal__header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px 20px;border-bottom:1px solid var(--border);}
+    .cliente-modal__title{margin:0;font-size:1.25rem;line-height:1.2;color:var(--heading);}
+    .cliente-modal__close{background:transparent;border:none;font-size:24px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 8px;}
+    .cliente-modal__body{padding:8px 20px 16px 20px;display:flex;flex-direction:column;gap:16px;color:var(--text);}
+    .cliente-modal__info{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;}
+    .cliente-modal__dato{min-width:200px;}
+    .cliente-modal__total{padding:8px 12px;border:1px solid var(--border);border-radius:8px;min-width:220px;background:#0b1220;}
+    .cliente-modal__total .total-number{font-weight:700;margin-top:4px;color:var(--danger);font-size:1.15rem;}
+    .cliente-modal__toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;color:var(--text);}
+    .cliente-modal__toolbar .tabs{display:flex;gap:6px;background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:4px;}
+    .cliente-modal__toolbar .actions{display:flex;gap:6px;flex-wrap:wrap;}
+    .cliente-modal__lista{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow-y:auto;overflow-x:hidden;padding-right:4px;}
+    .op-item{border:1px solid var(--border);border-radius:12px;padding:12px;background:#0b1220;transition:background .12s ease, box-shadow .12s ease;}
+    .op-item:hover{background:rgba(255,255,255,0.03);box-shadow:0 2px 4px -2px rgba(0,0,0,.18);}
+    .op-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .op-kind{font-weight:600;margin-bottom:2px;}
+    .op-kind.neg{color:var(--danger);} .op-kind.pos{color:var(--success);}
+    .op-date{font-size:.75rem;color:var(--muted);}
+    .op-monto{font-weight:700;}
+    .cliente-modal .tab{appearance:none;background:transparent;color:var(--text);border:0;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer;}
+    .cliente-modal .tab:hover{background:rgba(255,255,255,0.04);}
+    .cliente-modal .tab.active{background:var(--primary);color:#fff;}
+    .btn.sm{font-size:.75rem;padding:6px 10px;}
+    .btn.alt{background:var(--success);border-color:transparent;color:#fff;}
+    .more-indicator{font-size:.8rem;text-align:center;padding:8px;margin-top:4px;color:var(--muted);}
+    .cliente-modal__footer{padding:8px 16px 14px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;color:var(--muted);}
+    .cliente-modal__footer .hint{font-size:.7rem;}
+    @media (max-width:900px){.cliente-modal{width:100%;border-radius:0;min-height:100%;}.cliente-modal__lista{max-height:50vh;}}
+    `;
+    document.head.appendChild(style);
+}
+
 
 // Refrescar operaciones y totales del cliente visible
 async function refrescarOperacionesCliente(){

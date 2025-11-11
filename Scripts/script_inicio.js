@@ -117,13 +117,17 @@ async function openRegistroOperacion(){
             <button type="button" class="calc-btn" data-key="1" style="height:55px;">1</button>
             <button type="button" class="calc-btn" data-key="2" style="height:55px;">2</button>
             <button type="button" class="calc-btn" data-key="3" style="height:55px;">3</button>
-            <button type="button" id="calc-clear" style="height:55px; background-color:#d33 !important; color:white;">C</button>
+            <button type="button" class="calc-op" data-op="*" style="height:55px;">×</button>
             
             <button type="button" class="calc-btn" data-key="0" style="grid-column: span 2; height:55px;">0</button>
             <button type="button" class="calc-btn" data-key="." style="height:55px;">.</button>
             <button type="button" id="calc-eq" style="height:55px; background-color:#28a745 !important; color:white;">=</button>
         </div>
-        <small class="muted">Calculadora: Solo permite Suma (+), Resta (-) e Igual (=)</small>
+        <!-- Clear separado para no romper la cuadrícula al agregar multiplicación -->
+        <div style="margin-top:8px; display:flex; justify-content:flex-end;">
+            <button type="button" id="calc-clear" style="height:48px; padding:15px 55px; background-color:#d33 !important; color:white; border-radius:8px;">C</button>
+        </div>
+        <small class="muted">Calculadora: Permite Suma (+), Resta (-), Multiplicación (×) e Igual (=)</small>
         <div>
         <div style="display:flex; gap:12px; align-items:center; margin-top:8px;">
             <label style="display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;">
@@ -144,7 +148,7 @@ async function openRegistroOperacion(){
         html,
         focusConfirm: false,
         showCancelButton: true,
-        confirmButtonText: 'Registrar Pago',
+    confirmButtonText: 'Registrar Operación',
         cancelButtonText: 'Cancelar',
         showLoaderOnConfirm: true,
         preConfirm: async () => {
@@ -288,20 +292,30 @@ async function openRegistroOperacion(){
             let operator = null;
             let waitingForSecondOperand = false;
 
+            function getOperatorSymbol(op) {
+                if (op === '+') return '+';
+                if (op === '-') return '-';
+                if (op === '*') return '×';
+                return '';
+            }
+
             function updateDisplay(value) {
                 currentDisplay = String(value);
-                amount.value = currentDisplay;
-                // Al actualizar la pantalla, limpiamos cualquier placeholder previo
-                if (amount) amount.placeholder = '';
+                if (amount) {
+                    amount.value = currentDisplay;
+                    // Al actualizar la pantalla, limpiamos cualquier placeholder previo
+                    amount.placeholder = '';
+                }
             }
 
             function calculate(first, second, op) {
                 first = parseFloat(first);
                 second = parseFloat(second);
-                // **SOLO SUMA Y RESTA**
+                // Soportar suma, resta y multiplicación
                 if (op === '+') return first + second;
                 if (op === '-') return first - second;
-                
+                if (op === '*') return first * second;
+
                 return second; // Si no hay operador válido, devuelve el segundo operando.
             }
 
@@ -330,13 +344,18 @@ async function openRegistroOperacion(){
             }
 
             function handleOperator(nextOperator) {
-                // Solo permitimos + y -
-                if (nextOperator !== '+' && nextOperator !== '-') return;
-                
+                // Permitimos +, - y *
+                if (nextOperator !== '+' && nextOperator !== '-' && nextOperator !== '*') return;
+
                 const inputValue = parseFloat(currentDisplay);
 
+
+                // Si ya hay un operador y estamos esperando segundo operando,
+                // simplemente cambiamos el operador y actualizamos la visualización (value).
                 if (operator && waitingForSecondOperand) {
                     operator = nextOperator;
+                    // mostrar el nuevo símbolo junto al valor actual en el value
+                    if (amount) amount.value = String(currentDisplay) + ' ' + getOperatorSymbol(operator);
                     return;
                 }
 
@@ -348,9 +367,8 @@ async function openRegistroOperacion(){
                     updateDisplay(firstOperand.toFixed(2));
                 }
 
-                // Establecer el valor previo como placeholder para que quede visible como referencia
-                // sin borrar el contenido actual del input.
-                if (amount) amount.placeholder = String(currentDisplay);
+                // Mostrar el operador en el campo de monto (junto al número actual) usando value
+                if (amount) amount.value = String(currentDisplay) + ' ' + getOperatorSymbol(nextOperator);
 
                 waitingForSecondOperand = true;
                 operator = nextOperator;
@@ -365,6 +383,7 @@ async function openRegistroOperacion(){
                 
                 const result = calculate(firstOperand, secondOperand, operator);
                 
+                // Mostrar resultado en pantalla
                 updateDisplay(result.toFixed(2));
                 // Al finalizar la operación, limpiar el placeholder pues mostramos el resultado
                 if (amount) amount.placeholder = '';
@@ -521,21 +540,27 @@ async function showOperacionDetalle(item, tipo) {
         lines.push(`<strong>Nombre Cliente:</strong> ${escapeHtml(String(nombreCliente))}`);
     }
 
-    // Incluimos el tipo de operación, que se había perdido en la versión anterior
-    lines.push(`<strong>Tipo:</strong> ${tipo === 'deudas' ? 'Deuda' : 'Pago'}`);
+    // No mostrar el campo "Tipo" para registros de tipo 'deudas' o 'pagos' según solicitud
+    if (tipo !== 'deudas' && tipo !== 'pagos') {
+        lines.push(`<strong>Tipo:</strong> ${tipo === 'deudas' ? 'Deuda' : 'Pago'}`);
+    }
     
     lines.push(`<strong>Monto:</strong> ${monto}`);
     lines.push(`<strong>Fecha:</strong> ${creado}`);
 
     // --- Otros Campos ---
-    const ignored = new Set([
+    // Campos a ignorar (comprobación case-insensitive). Añadimos id_deuda y tipo
+    const ignoredList = [
         'Monto', 'monto', 'Amount', 'amount',
         'Creado', 'creado', 'fecha', 'created_at',
-        'Cliente', 'cliente', 'client', 'Telefono_cliente'
-    ]);
+        'Cliente', 'cliente', 'client', 'Telefono_cliente',
+        'id_deuda', 'idDeuda', 'idDeuda', 'id_pago', 'idPago', 'idPago', 'tipo', 'Tipo'
+        
+    ];
+    const ignored = new Set(ignoredList.map(x => String(x).toLowerCase()));
 
     Object.keys(item).forEach((k) => {
-        if (ignored.has(k)) return;
+        if (ignored.has(String(k).toLowerCase())) return;
         const v = item[k];
         let display;
         if (v === null || v === undefined) {

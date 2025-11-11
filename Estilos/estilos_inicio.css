@@ -306,6 +306,67 @@ button:disabled, .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 .swal2-actions .swal2-styled:focus { box-shadow: 0 0 0 3px var(--ring) !important; }
 
+/* Mejoras específicas para contenido dentro del modal (checkboxes, labels y calculadora) */
+.swal2-html-container {
+	display: block;
+	word-break: break-word;
+}
+.swal2-html-container label {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	color: var(--text);
+	font-weight: 600;
+	font-size: 0.975rem;
+}
+.swal2-html-container input[type="checkbox"] {
+	/* Hacer la casilla más visible dentro del tema oscuro */
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	padding: 0;
+	vertical-align: middle;
+	/* modern browsers show accent-color for checkbox checkmark */
+	accent-color: var(--primary);
+	-webkit-appearance: checkbox;
+	appearance: checkbox;
+	cursor: pointer;
+}
+.swal2-html-container input[type="checkbox"]:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
+	border-radius: 4px;
+}
+
+/* Estilos para la calculadora embebida dentro del modal */
+.swal2-html-container #calc { margin-top: 8px; }
+.swal2-html-container #calc .calc-btn,
+.swal2-html-container #calc .calc-op,
+.swal2-html-container #calc #calc-eq,
+.swal2-html-container #calc #calc-clear {
+	background: #0b1220;
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 8px;
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: none;
+}
+.swal2-html-container #calc .calc-op { background: rgba(255,255,255,0.02); }
+.swal2-html-container #calc #calc-eq { background: var(--success) !important; color: white !important; }
+.swal2-html-container #calc #calc-clear {
+	background: #d33 !important;
+	color: white !important;
+	padding: 10px 20px !important;    /* más espacio horizontal para hacerlo "más largo" */
+	min-width: 160px !important;      /* asegura un ancho mínimo */
+	display: inline-block !important;
+	text-align: center !important;
+	border-radius: 10px !important;
+}
+.swal2-html-container .muted { color: var(--muted); font-size: 0.9rem; }
+
+
 /* Motion safe */
 @media (prefers-reduced-motion: reduce) {
 	* { transition: none !important; }
