@@ -22,6 +22,7 @@
 	--ring: rgba(59, 130, 246, 0.45);
 	--success: #10b981;      /* emerald-500 */
 	--danger: #ef4444;       /* red-500 */
+	--footer-h: 56px;        /* altura mínima del footer fijo */
 }
 
 /* Reset y base */
@@ -38,6 +39,8 @@ body {
 	display: grid;
 	place-items: center;
 	padding: 24px;
+	/* Reservar espacio para el footer fijo y evitar que tape contenido */
+	padding-bottom: calc(24px + var(--footer-h) + env(safe-area-inset-bottom, 0px));
 }
 
 /* Scrollbar (oscuro) */
@@ -172,6 +175,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
 /* Footer fijo */
+/* Footer fijo */
 footer{
     position: fixed;
     bottom: 0;
@@ -181,6 +185,10 @@ footer{
     text-align: center;
     font-size: 0.875rem;
     color: var(--muted);
+	min-height: var(--footer-h);
+	padding: 8px 12px;
+	display: grid;
+	place-items: center;
 }
 
 .contendedor_cont {

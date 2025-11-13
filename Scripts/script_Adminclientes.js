@@ -42,19 +42,19 @@ function Regresar(){
 window.Regresar = Regresar;
 
 async function agregarCliente(){
-    const html = `
-    <div style="display:grid;gap:4px">
-      <label class="muted" for="nombre">Nombre completo</label>
-      <input class="swal2-input" type="text" id="nombre" name="nombre" placeholder="Ej: Juan Pérez" required>
+        const html = `
+        <div style="display:grid; gap:8px; width:100%; max-width:100%; box-sizing:border-box; overflow:hidden;">
+            <label class="muted" for="nombre">Nombre completo</label>
+            <input class="swal2-input" type="text" id="nombre" name="nombre" placeholder="Ej: Juan Pérez" required style="width:100%; max-width:100%; box-sizing:border-box;">
 
-      <label class="muted" for="telefono">Teléfono</label>
-      <input class="swal2-input" type="tel" id="telefono" name="telefono" placeholder="264 400 9000" inputmode="tel" required>
-    </div>`;
+            <label class="muted" for="telefono">Teléfono</label>
+            <input class="swal2-input" type="tel" id="telefono" name="telefono" placeholder="264 400 9000" inputmode="tel" required style="width:100%; max-width:100%; box-sizing:border-box;">
+        </div>`;
 
     const { value: formValues } = await Swal.fire({
         title: 'Registrar cliente',
         html: html,
-        width: 620,
+        width: 'min(520px, 92vw)',
         showCancelButton: true,
         confirmButtonText: 'Registrar',
         cancelButtonText: 'Cancelar',

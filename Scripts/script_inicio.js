@@ -478,16 +478,16 @@ function renderListaOperaciones(container, items, tipo){
         card.addEventListener('click', () => showOperacionDetalle(item, tipo));
         container.appendChild(card);
     });
-    // If collapsed and there are more items, show a clickable indicator
-    if (!isExpanded && items.length > 4){
-        const more = document.createElement('div');
-        more.className = 'more-indicator';
-        more.textContent = `Mostrar ${items.length - 4} registros más`;
-        more.addEventListener('click', () => {
-            // toggle expansion via the same function
+    // Persistent toggle indicator: show on both states when there are more items
+    if (items.length > 4){
+        const toggle = document.createElement('div');
+        toggle.className = 'more-indicator';
+        toggle.textContent = isExpanded ? 'Ocultar registros' : `Mostrar ${items.length - 4} registros más`;
+        toggle.addEventListener('click', () => {
+            // Toggle expansion via the same function used by the external button
             window.expandirTabla && window.expandirTabla();
         });
-        container.appendChild(more);
+        container.appendChild(toggle);
     }
 }
 
