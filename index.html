@@ -12,7 +12,13 @@
         <h1>Iniciar Sesión</h1>
         <form id="form_login">
             <label for="password">Contraseña:</label>
-            <input type="password" id="password" name="password" required>
+
+            <div class="contendedor_cont">
+                <input type="password" id="password" name="password" required>
+                <button class="botonalternar" type="button" id="togglePassword" style="width: 50px; height: 50px;">👁️</button>
+            </div>
+
+            
             <br><br>
             <button type="submit">Ingresar</button>
         </form>
@@ -22,6 +28,18 @@
         <p>&copy;2025 Sistema de Clientes. Todos los derechos reservados.</p>
     </footer>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+
     <script src="Scripts/script_index.js" type="module"></script>
+        <script>
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordField = document.getElementById('password');
+    
+        togglePassword.addEventListener('click', function () {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.textContent = type === 'password' ? '👁️' : '🙈';
+        });
+    </script>
+
 </body>
 </html>

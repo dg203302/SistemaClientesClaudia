@@ -622,12 +622,17 @@ async function cargarMontoAdeudadoMensual(){
     console.log(data);
     const totalMensual = (data || []).reduce((acc, row) => acc + (Number(row.Deuda_Activa) || 0), 0);
     const indicadorMonto = document.getElementById('total_adeudado_mes');
-    indicadorMonto.textContent = totalMensual.toFixed(2);
+    const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+    indicadorMonto.textContent = formatter.format(totalMensual);
+    // Guardar valor numérico sin formato para lógica de color
+    indicadorMonto.dataset.valor = String(totalMensual);
     actualizarColor(indicadorMonto);
     return;
 }
 function actualizarColor(indicador){
-    const valor = parseFloat(indicador.textContent);
+    const valorStr = (indicador && indicador.dataset && indicador.dataset.valor) ? indicador.dataset.valor : indicador.textContent;
+    const valor = parseFloat(valorStr);
+    if (Number.isNaN(valor)) return;
     if (valor === 0) {
         indicador.style.color = 'white';
     } else if (valor > 0 && valor <=100000){
@@ -645,3 +650,54 @@ async function recargarMontos(){
 }
 window.recargarMontos=recargarMontos;
 window.recargarTabla = recargarTabla;
+
+document.getElementById("deuda_total").addEventListener("click", async function() {
+    await Swal.fire({
+        title: 'Desglose de Deuda Total Activa',
+        html: 'Cargando...',
+        didOpen: async () => {
+            const { data, error } = await client
+                .from('Clientes')
+                .select('Nombre, Telefono, Deuda_Activa')
+                .gt('Deuda_Activa', 0)
+                .order('Deuda_Activa', { ascending: false });
+            if (error) {
+                Swal.getHtmlContainer().innerHTML = 'Error al cargar los datos: ' + escapeHtml(error.message);
+                return;
+            }
+            if (!data || data.length === 0) {
+                Swal.getHtmlContainer().innerHTML = 'No hay clientes con deuda activa.';
+                return;
+            }
+            const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+            let totalDeuda = 0;
+            let html = '<div id="deuda-breakdown" style="display:grid; gap:8px;">';
+            data.forEach(cliente => {
+                const nombreCompleto = cliente.Nombre || '';
+                const telefono = cliente.Telefono || '';
+                const deuda = Number(cliente.Deuda_Activa) || 0;
+                totalDeuda += deuda;
+                html += `
+                    <div class="op-item" style="border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:12px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                            <div>
+                                <div style="font-weight:600;">${escapeHtml(nombreCompleto)}</div>
+                                <div class="muted" style="font-size:0.85rem;">${escapeHtml(telefono)}</div>
+                            </div>
+                            <div style="font-weight:700; color:var(--danger)">${formatter.format(deuda)}</div>
+                        </div>
+                    </div>`;
+            });
+            // Total de deuda activa acumulada, bien formateado
+            html += `
+                <div class="op-item" style="border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:12px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                        <div class="muted" style="font-weight:600;">Total Deuda Activa</div>
+                        <div style="font-weight:700; color:var(--danger);">${formatter.format(totalDeuda)}</div>
+                    </div>
+                </div>`;
+            html += '</div>';
+            Swal.getHtmlContainer().innerHTML = html;
+        }
+    })
+});
