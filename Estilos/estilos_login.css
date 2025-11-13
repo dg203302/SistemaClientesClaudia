@@ -171,6 +171,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 	* { transition: none !important; }
 }
 
+/* Footer fijo */
 footer{
     position: fixed;
     bottom: 0;
