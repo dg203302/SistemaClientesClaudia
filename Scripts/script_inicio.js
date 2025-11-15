@@ -92,51 +92,98 @@ function setActiveTab(tipo){
 async function openRegistroOperacion(){
     await window.loadSweetAlert2();
     const html = `
-    <div style="display:grid; gap:8px; text-align:left;">
+        <style>
+      .swal-reg{display:grid;gap:12px;text-align:left;max-width:100%}
+      .swal-reg .reg-row{display:flex;flex-direction:column;gap:8px}
+      .swal-reg .reg-matches{max-height:35vh;overflow:auto}
+      .swal-reg .reg-amount{width:100% !important;text-align:right !important;font-size:clamp(1.1rem,2.5vw,1.5rem) !important;font-weight:700 !important}
+            .swal-reg .swal2-input{width:100% !important;max-width:100%;box-sizing:border-box;display:block;margin:0;text-align:center}
+      .swal-reg .calc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:8px}
+      .swal-reg .calc-grid button{min-height:44px}
+      .swal-reg .reg-actions{margin-top:8px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+      .swal-reg .btn-clear{padding:10px 16px;border-radius:8px}
+      .swal-reg .btn-eq{background-color:#28a745 !important;color:#fff}
+            .swal-reg .type-row{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:8px}
+            /* Modern chips for Pago/Deuda */
+            .swal-reg .type-chip{position:relative;display:inline-flex;align-items:center}
+            .swal-reg .type-chip input{position:absolute;opacity:0;pointer-events:none}
+            .swal-reg .type-chip .chip{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:999px;border:1px solid var(--border, rgba(255,255,255,0.15));background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));color:var(--text, #e5e7eb);font-weight:700;letter-spacing:.2px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .12s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease}
+            .swal-reg .type-chip:hover .chip{transform:translateY(-1px);box-shadow:0 8px 22px rgba(0,0,0,.3)}
+            .swal-reg .type-chip input:focus + .chip{outline:2px solid var(--ring, #7c3aed);outline-offset:2px}
+            .swal-reg .type-chip.pago input:checked + .chip{background:var(--success, #16a34a);color:#fff;border-color:transparent;box-shadow:0 10px 24px rgba(22,163,74,.35), inset 0 -2px 0 rgba(0,0,0,.15)}
+            .swal-reg .type-chip.deuda input:checked + .chip{background:var(--danger, #dc2626);color:#fff;border-color:transparent;box-shadow:0 10px 24px rgba(220,38,38,.35), inset 0 -2px 0 rgba(0,0,0,.15)}
+            @media (max-width: 480px){
+                /* Mantener 4 columnas y posicionar operadores a la derecha */
+                .swal-reg .calc-grid{grid-template-columns:repeat(4,1fr)}
+                /* Operadores a la derecha por fila */
+                #calc .calc-op[data-op="+"]{grid-column:4;grid-row:1}
+                #calc .calc-op[data-op="-"]{grid-column:4;grid-row:2}
+                #calc .calc-op[data-op="*"]{grid-column:4;grid-row:3}
+                /* Números mantienen la secuencia 7-8-9 / 4-5-6 / 1-2-3 a la izquierda */
+                #calc .calc-btn[data-key="7"]{grid-column:1;grid-row:1}
+                #calc .calc-btn[data-key="8"]{grid-column:2;grid-row:1}
+                #calc .calc-btn[data-key="9"]{grid-column:3;grid-row:1}
+                #calc .calc-btn[data-key="4"]{grid-column:1;grid-row:2}
+                #calc .calc-btn[data-key="5"]{grid-column:2;grid-row:2}
+                #calc .calc-btn[data-key="6"]{grid-column:3;grid-row:2}
+                #calc .calc-btn[data-key="1"]{grid-column:1;grid-row:3}
+                #calc .calc-btn[data-key="2"]{grid-column:2;grid-row:3}
+                #calc .calc-btn[data-key="3"]{grid-column:3;grid-row:3}
+                /* Fila inferior: 0 (ocupa 2 cols) . = */
+                #calc .calc-btn[data-key="0"]{grid-column:1 / span 2 !important;grid-row:4}
+                #calc .calc-btn[data-key="."]{grid-column:3;grid-row:4}
+                #calc #calc-eq{grid-column:4;grid-row:4}
+                /* Acciones debajo siguen siendo responsivas */
+                .swal-reg .reg-actions{justify-content:stretch}
+                .swal-reg .btn-clear{flex:1}
+            }
+    </style>
+    <div class="swal-reg">
         <label style="font-weight:600">Buscar Cliente (nombre, apellido o teléfono)</label>
-        <input id="clientSearch" class="swal2-input" placeholder="Escribe nombre, apellido o teléfono">
-        <div id="clientMatches" style="max-height:120px; overflow:auto;"></div>
+        <input id="clientSearch" class="swal2-input" placeholder="Escribe nombre, apellido o teléfono" style="width:100%">
+        <div id="clientMatches" class="reg-matches"></div>
 
         <label style="font-weight:600">Categoría</label>
-        <input id="opCategory" class="swal2-input" placeholder="Categoria (p.ej. Servicio, Producto)">
+        <input id="opCategory" class="swal2-input" placeholder="Categoria (p.ej. Servicio, Producto)" style="width:100%">
 
         <label style="font-weight:600">Monto</label>
-        <input id="opAmount" class="swal2-input" style="text-align:right; width:70%; font-size:1.5em; font-weight:bold;" value="0"> 
+        <input id="opAmount" class="swal2-input reg-amount" value="0"> 
         
-        <div id="calc" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-top:8px;">
-            <button type="button" class="calc-btn" data-key="7" style="height:55px;">7</button>
-            <button type="button" class="calc-btn" data-key="8" style="height:55px;">8</button>
-            <button type="button" class="calc-btn" data-key="9" style="height:55px;">9</button>
-            <button type="button" class="calc-op" data-op="+" style="height:55px;">+</button>
+        <div id="calc" class="calc-grid">
+            <button type="button" class="calc-btn" data-key="7">7</button>
+            <button type="button" class="calc-btn" data-key="8">8</button>
+            <button type="button" class="calc-btn" data-key="9">9</button>
+            <button type="button" class="calc-op" data-op="+">+</button>
 
-            <button type="button" class="calc-btn" data-key="4" style="height:55px;">4</button>
-            <button type="button" class="calc-btn" data-key="5" style="height:55px;">5</button>
-            <button type="button" class="calc-btn" data-key="6" style="height:55px;">6</button>
-            <button type="button" class="calc-op" data-op="-" style="height:55px;">-</button>
+            <button type="button" class="calc-btn" data-key="4">4</button>
+            <button type="button" class="calc-btn" data-key="5">5</button>
+            <button type="button" class="calc-btn" data-key="6">6</button>
+            <button type="button" class="calc-op" data-op="-">-</button>
 
-            <button type="button" class="calc-btn" data-key="1" style="height:55px;">1</button>
-            <button type="button" class="calc-btn" data-key="2" style="height:55px;">2</button>
-            <button type="button" class="calc-btn" data-key="3" style="height:55px;">3</button>
-            <button type="button" class="calc-op" data-op="*" style="height:55px;">×</button>
+            <button type="button" class="calc-btn" data-key="1">1</button>
+            <button type="button" class="calc-btn" data-key="2">2</button>
+            <button type="button" class="calc-btn" data-key="3">3</button>
+            <button type="button" class="calc-op" data-op="*">×</button>
             
-            <button type="button" class="calc-btn" data-key="0" style="grid-column: span 2; height:55px;">0</button>
-            <button type="button" class="calc-btn" data-key="." style="height:55px;">.</button>
-            <button type="button" id="calc-eq" style="height:55px; background-color:#28a745 !important; color:white;">=</button>
+            <button type="button" class="calc-btn" data-key="0" style="grid-column: span 2;">0</button>
+            <button type="button" class="calc-btn" data-key=".">.</button>
+            <button type="button" id="calc-eq" class="btn-eq">=</button>
         </div>
-        <!-- Clear separado para no romper la cuadrícula al agregar multiplicación -->
-        <div style="margin-top:8px; display:flex; justify-content:flex-end;">
-            <button type="button" id="calc-clear" style="height:48px; padding:15px 55px; background-color:#d33 !important; color:white; border-radius:8px;">C</button>
+        <!-- Acciones: Backspace (⌫) y Clear (C) -->
+        <div class="reg-actions">
+            <button type="button" id="calc-back" class="btn-clear" style="background-color:#6b7280 !important; color:white;" title="Borrar un dígito">⌫</button>
+            <button type="button" id="calc-clear" class="btn-clear" style="background-color:#d33 !important; color:white;">C</button>
         </div>
         <small class="muted">Calculadora: Permite Suma (+), Resta (-), Multiplicación (×) e Igual (=)</small>
         <div>
-        <div style="display:flex; gap:12px; align-items:center; margin-top:8px;">
-            <label style="display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;">
+        <div class="type-row" style="display:flex; gap:12px; align-items:center; margin-top:8px;">
+            <label class="type-chip pago" style="cursor:pointer;">
                 <input type="checkbox" id="chkPago" onclick="const d=document.getElementById('chkDeuda'); if(this.checked) d.checked=false;">
-                Pago
+                <span class="chip">Pago</span>
             </label>
-            <label style="display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;">
+            <label class="type-chip deuda" style="cursor:pointer;">
                 <input type="checkbox" id="chkDeuda" onclick="const p=document.getElementById('chkPago'); if(this.checked) p.checked=false;">
-                Deuda
+                <span class="chip">Deuda</span>
             </label>
         </div>
         </div>
@@ -286,6 +333,7 @@ async function openRegistroOperacion(){
             const ops = document.querySelectorAll('#calc .calc-op');
             const eq = document.getElementById('calc-eq');
             const clear = document.getElementById('calc-clear');
+            const back = document.getElementById('calc-back');
             
             let currentDisplay = '0';
             let firstOperand = null;
@@ -401,6 +449,28 @@ async function openRegistroOperacion(){
                 if (amount) amount.placeholder = '';
             }
 
+            function backspace() {
+                // Si estamos esperando el segundo operando y hay operador, quitamos el operador
+                if (waitingForSecondOperand) {
+                    if (operator) {
+                        operator = null;
+                        waitingForSecondOperand = false;
+                        if (amount) amount.value = String(currentDisplay);
+                        return;
+                    } else {
+                        waitingForSecondOperand = false;
+                    }
+                }
+
+                // Operar sobre el número mostrado
+                if (!currentDisplay || currentDisplay === '0') return;
+                if (currentDisplay.length <= 1 || (currentDisplay.length === 2 && currentDisplay.startsWith('-'))) {
+                    updateDisplay('0');
+                } else {
+                    updateDisplay(currentDisplay.slice(0, -1));
+                }
+            }
+
             // Event Listeners
             btns.forEach(b => b.addEventListener('click', () => {
                 const k = b.dataset.key;
@@ -417,6 +487,7 @@ async function openRegistroOperacion(){
 
             if (eq) eq.addEventListener('click', handleEquals);
             if (clear) clear.addEventListener('click', clearCalculator);
+            if (back) back.addEventListener('click', backspace);
 
             // Sincronizar el input de monto con la lógica de la calculadora al inicio
             if (amount.value !== '0') {
