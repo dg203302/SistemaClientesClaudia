@@ -143,8 +143,8 @@ async function openRegistroOperacion(){
         <input id="clientSearch" class="swal2-input" placeholder="Escribe nombre, apellido o teléfono" style="width:100%">
         <div id="clientMatches" class="reg-matches"></div>
 
-        <label style="font-weight:600">Categoría</label>
-        <input id="opCategory" class="swal2-input" placeholder="Categoria (p.ej. Servicio, Producto)" style="width:100%">
+        <label style="font-weight:600">Detalles</label>
+        <input id="opCategory" class="swal2-input" placeholder="Detalles (p.ej. Servicio, Producto)" style="width:100%">
 
         <label style="font-weight:600">Monto</label>
         <input id="opAmount" class="swal2-input reg-amount" value="0"> 

@@ -373,20 +373,6 @@ async function showOperacionDetalleCliente(item, tipo){
     catch(e){ alert(html.replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '')); }
 }
 
-// calcula deuda total del cliente consultando la tabla Deudas
-async function calcularMontoTotalAdeudado(telefono){
-        if (!telefono) return 0;
-        const { data, error } = await supabase
-                .from('Deudas')
-                .select('Monto')
-                .eq('Telefono_cliente', telefono);
-        if (error) {
-                console.error('Error al calcular deuda total', error);
-                return 0;
-        }
-        return (data || []).reduce((acc, r) => acc + (Number(r.Monto) || 0), 0);
-}
-
 // Mostrar detalles del cliente en un modal que replica la UI/funcionalidad del div de detalles
 async function mostrarDetallesClienteModal(cliente){
     if (!cliente) return;
@@ -429,6 +415,7 @@ async function mostrarDetallesClienteModal(cliente){
                     <div class="actions">
                         <button id="modal_btn_whatsapp" class="btn sm alt">WhatsApp</button>
                         <button id="modal_btn_refrescar" class="btn sm">Refrescar</button>
+                        <button id="modal_btn_eliminar_todas" class="btn sm" style="background:#d33;color:#fff;border-color:transparent;">Eliminar Deudas</button>
                     </div>
                 </div>
                 <div id="modal_lista_operaciones" class="cliente-modal__lista">Cargando...</div>
@@ -443,6 +430,7 @@ async function mostrarDetallesClienteModal(cliente){
     const elTotalAdeudado = overlay.querySelector('#modal_montototalAdeudado');
     const btnWhats = overlay.querySelector('#modal_btn_whatsapp');
     const btnRefrescar = overlay.querySelector('#modal_btn_refrescar');
+    const btnEliminarTodas = overlay.querySelector('#modal_btn_eliminar_todas');
     const btnDeudas = overlay.querySelector('#modal_btn_ver_deudas');
     const btnPagos = overlay.querySelector('#modal_btn_ver_pagos');
     const listaCont = overlay.querySelector('#modal_lista_operaciones');
@@ -452,8 +440,21 @@ async function mostrarDetallesClienteModal(cliente){
     let modalView = 'deudas';
 
     async function updateTotals(){
-        const adeudado = (cliente.Deuda_Activa !== undefined) ? Number(cliente.Deuda_Activa) || 0 : await calcularMontoTotalAdeudado(telefono);
-        if (elTotalAdeudado) elTotalAdeudado.textContent = formatter.format(adeudado);
+        try{
+            const { data, error } = await supabase
+                .from('Clientes')
+                .select('Deuda_Activa')
+                .eq('Telefono', telefono)
+                .single();
+            let adeudado = 0;
+            if (!error) {
+                adeudado = Number(data?.Deuda_Activa) || 0;
+                cliente.Deuda_Activa = adeudado;
+            }
+            if (elTotalAdeudado) elTotalAdeudado.textContent = formatter.format(adeudado);
+        }catch(err){
+            console.error('updateTotals error', err);
+        }
     }
 
     async function loadOps(view){
@@ -482,9 +483,59 @@ async function mostrarDetallesClienteModal(cliente){
                 const card = document.createElement('div');
                 card.className = 'op-item';
                 card.tabIndex = 0;
-                card.innerHTML = `<div class="op-row"><div><div class="op-kind ${view==='deudas' ? 'neg' : 'pos'}">${view==='deudas' ? 'Deuda' : 'Pago'}</div><div class="op-date">${escapeHtml(String(fecha))}</div></div><div class="op-monto">${formatterLocal.format(monto)}</div></div>`;
+                card.innerHTML = `<div class="op-row">
+                    <div>
+                        <div class="op-kind ${view==='deudas' ? 'neg' : 'pos'}">${view==='deudas' ? 'Deuda' : 'Pago'}</div>
+                        <div class="op-date">${escapeHtml(String(fecha))}</div>
+                    </div>
+                    <div class="op-monto">${formatterLocal.format(monto)}</div>
+                </div>`;
                 card.addEventListener('click', () => showOperacionDetalleCliente(item, view));
                 card.addEventListener('keypress', (e)=>{ if(e.key==='Enter') showOperacionDetalleCliente(item, view); });
+
+                // Acciones individuales (solo para deudas): eliminar y WhatsApp
+                if (view === 'deudas'){
+                    const actions = document.createElement('div');
+                    actions.className = 'op-actions';
+                    actions.style.cssText = 'display:flex; gap:8px; justify-content:flex-end; margin-top:6px;';
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn sm';
+                    delBtn.textContent = 'Eliminar';
+                    delBtn.style.cssText = 'background:#d33;color:#fff;border-color:transparent;';
+                    delBtn.addEventListener('click', async (ev) => {
+                        ev.stopPropagation();
+                        const confirm = await Swal.fire({
+                            title: 'Eliminar deuda',
+                            text: `¿Eliminar la deuda de ${formatterLocal.format(monto)} del ${fecha}?`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Eliminar',
+                            cancelButtonText: 'Cancelar'
+                        });
+                        if (!confirm.isConfirmed) return;
+                        const ok = await eliminarDeudaIndiv(item, telefono);
+                        if (ok){
+                            await updateTotals();
+                            await loadOps(view);
+                            await showSuccessToast('Deuda eliminada');
+                        }
+                    });
+
+                    const waBtn = document.createElement('button');
+                    waBtn.className = 'btn sm alt';
+                    waBtn.textContent = 'WhatsApp';
+                    waBtn.addEventListener('click', (ev) => {
+                        ev.stopPropagation();
+                        const mensaje = `Hola ${currentClienteNombre || ''}, deuda registrada: ${formatterLocal.format(monto)} el ${fecha}.`;
+                        const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+                        window.open(url, '_blank');
+                    });
+
+                    actions.appendChild(delBtn);
+                    actions.appendChild(waBtn);
+                    card.appendChild(actions);
+                }
                 listaCont.appendChild(card);
             });
             if (items.length > 200){
@@ -513,6 +564,24 @@ async function mostrarDetallesClienteModal(cliente){
     btnRefrescar?.addEventListener('click', async () => { await updateTotals(); await loadOps(modalView); });
     btnDeudas?.addEventListener('click', async () => { modalView = 'deudas'; setActiveTabs(); await loadOps(modalView); });
     btnPagos?.addEventListener('click', async () => { modalView = 'pagos'; setActiveTabs(); await loadOps(modalView); });
+    btnEliminarTodas?.addEventListener('click', async () => {
+        if (modalView !== 'deudas') return;
+        const confirm = await Swal.fire({
+            title: 'Eliminar todas las deudas',
+            text: '¿Eliminar TODAS las deudas de este cliente? Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Eliminar todas',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!confirm.isConfirmed) return;
+        const ok = await eliminarDeudasCliente(telefono);
+        if (ok){
+            await updateTotals();
+            await loadOps(modalView);
+            await showSuccessToast('Deudas eliminadas');
+        }
+    });
     btnClose?.addEventListener('click', closeModalCliente);
     overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModalCliente(); });
     document.addEventListener('keydown', escListenerOnce);
@@ -700,4 +769,105 @@ function enviarDeudaTotal(){
         window.open(urlWhatsApp, '_blank'); 
     });
 }
-window.enviarDeudaTotal = enviarDeudaTotal;
+window.enviarDeudaTotal = enviarDeudaTotal
+
+// Eliminar una deuda individual
+async function eliminarDeudaIndiv(item, telefono){
+    try{
+        // Detectar llave primaria probable
+        const idKeys = ['id_deuda','idDeuda','id','ID','Id'];
+        let usedKey = null; let idVal = null;
+        for (const k of idKeys){
+            if (item && item[k] !== undefined && item[k] !== null){ usedKey = k; idVal = item[k]; break; }
+        }
+        let del = supabase.from('Deudas').delete();
+        if (usedKey){
+            del = del.eq(usedKey, idVal);
+        } else {
+            // Fallback: usar coincidencia por teléfono + monto + fecha si existen
+            const matchObj = { };
+            if (telefono) matchObj['Telefono_cliente'] = telefono;
+            const monto = (item.Monto ?? item.monto);
+            if (monto !== undefined) matchObj['Monto'] = Number(monto) || 0;
+            const fecha = (item.Creado ?? item.created_at ?? item.fecha ?? item.creado);
+            if (fecha !== undefined) matchObj['Creado'] = fecha;
+            del = del.match(matchObj);
+        }
+        const { error } = await del;
+        if (error){ await showErrorToast('No se pudo eliminar la deuda: ' + error.message); return false; }
+        await restarDeuda_cliente(telefono, item.Monto)
+        return true;
+    }catch(err){
+        console.error('Eliminar deuda indiv error', err);
+        await showErrorToast('Error eliminando la deuda');
+        return false;
+    }
+}
+
+// Eliminar todas las deudas del cliente (sin borrar al cliente)
+async function eliminarDeudasCliente(telefono){
+    try{
+        const tel = normalizePhone(telefono || currentClienteTelefono || '');
+        if (!tel){ await showErrorToast('Teléfono inválido'); return false; }
+        const { error } = await supabase
+            .from('Deudas')
+            .delete()
+            .eq('Telefono_cliente', tel);
+        if (error){ await showErrorToast('No se pudieron eliminar las deudas: ' + error.message); return false; }
+        await reiniciarDeudas(tel);
+        return true;
+    }catch(err){
+        console.error('Eliminar todas deudas error', err);
+        await showErrorToast('Error eliminando deudas');
+        return false;
+    }
+}
+
+async function reiniciarDeudas(tele){
+    const tel = normalizePhone(tele || '');
+    if (!tel) return;
+    const { data, error } = await supabase
+        .from('Clientes')
+        .select('Deuda_Activa')
+        .eq('Telefono', tel)
+        .single();
+    if (error) {
+        showErrorToast('Error al obtener deuda activa: ' + error.message);
+        console.error('Error al obtener deuda activa', error);
+        return;
+    }
+    const nuevoDeuda = 0;
+    const { error: updateError } = await supabase
+        .from('Clientes')
+        .update({ Deuda_Activa: nuevoDeuda })
+        .eq('Telefono', tel);
+    if (updateError) {
+        showErrorToast('Error al actualizar deuda activa: ' + updateError.message);
+        console.error('Error al actualizar deuda activa', updateError);
+    }
+}
+
+async function restarDeuda_cliente(telefono, monto){
+    const tel = normalizePhone(telefono || currentClienteTelefono || '');
+    if (!tel) return;
+    const { data, error } = await supabase
+        .from('Clientes')
+        .select('Deuda_Activa')
+        .eq('Telefono', tel)
+        .single();
+    if (error) {
+        showErrorToast('Error al obtener deuda activa: ' + error.message);
+        console.error('Error al obtener deuda activa', error);
+        return;
+    }
+    const deudaActual = Number(data?.Deuda_Activa) || 0;
+    const nuevoDeuda = Math.max(0, deudaActual - (Number(monto) || 0));
+    const { error: updateError } = await supabase
+        .from('Clientes')
+        .update({ Deuda_Activa: nuevoDeuda })
+        .eq('Telefono', tel);
+    if (updateError) {
+        showErrorToast('Error al actualizar deuda activa: ' + updateError.message);
+        console.error('Error al actualizar deuda activa', updateError);
+    }
+}
