@@ -457,6 +457,61 @@ async function mostrarDetallesClienteModal(cliente){
         }
     }
 
+    // Permitir edición manual de Deuda Activa al hacer click en el monto
+    elTotalAdeudado?.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const valorActual = Number(cliente.Deuda_Activa) || 0;
+        const { value: nuevoStr } = await Swal.fire({
+            title: 'Editar Deuda Activa',
+            input: 'text',
+            inputLabel: 'Nuevo monto (ARS)',
+            inputValue: valorActual.toFixed(2),
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            inputAttributes: { 'aria-label': 'Nuevo monto de deuda activa' },
+            preConfirm: (val) => {
+                if (val === null || val === undefined || val.trim() === '') {
+                    return 'Ingresa un monto';
+                }
+                // Normalizar: reemplazar coma por punto y quitar símbolos
+                const normalizado = val.replace(/[^0-9,\.]/g,'').replace(',', '.');
+                const num = parseFloat(normalizado);
+                if (isNaN(num) || num < 0) {
+                    return 'Monto inválido';
+                }
+                if (num > 1_000_000_000) {
+                    return 'Monto demasiado grande';
+                }
+                return normalizado; // devolver valor normalizado
+            }
+        });
+        if (nuevoStr === undefined) return; // cancelado
+        const nuevo = parseFloat(nuevoStr);
+        if (isNaN(nuevo)) return;
+        try {
+            const { error: updErr } = await supabase
+                .from('Clientes')
+                .update({ Deuda_Activa: nuevo })
+                .eq('Telefono', telefono);
+            if (updErr){
+                await showErrorToast('Error al actualizar deuda: ' + updErr.message);
+                return;
+            }
+            cliente.Deuda_Activa = nuevo;
+            if (elTotalAdeudado) elTotalAdeudado.textContent = formatter.format(nuevo);
+            await showSuccessToast('Deuda actualizada');
+        }catch(err){
+            console.error('Error actualizando deuda activa', err);
+            await showErrorToast('Error inesperado al actualizar');
+        }
+    });
+    // Indicador visual de que se puede editar
+    if (elTotalAdeudado) {
+        elTotalAdeudado.style.cursor = 'pointer';
+        elTotalAdeudado.title = 'Click para editar Deuda Activa';
+    }
+
     async function loadOps(view){
         if (!listaCont) return;
         listaCont.textContent = 'Cargando...';

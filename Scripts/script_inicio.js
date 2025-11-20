@@ -115,24 +115,27 @@ async function openRegistroOperacion(){
             @media (max-width: 480px){
                 /* Mantener 4 columnas y posicionar operadores a la derecha */
                 .swal-reg .calc-grid{grid-template-columns:repeat(4,1fr)}
-                /* Operadores a la derecha por fila */
-                #calc .calc-op[data-op="+"]{grid-column:4;grid-row:1}
-                #calc .calc-op[data-op="-"]{grid-column:4;grid-row:2}
-                #calc .calc-op[data-op="*"]{grid-column:4;grid-row:3}
-                /* Números mantienen la secuencia 7-8-9 / 4-5-6 / 1-2-3 a la izquierda */
+                /* Reordenar operadores para incluir división: */
+                /* Fila 1: 7 8 9 ÷ */
                 #calc .calc-btn[data-key="7"]{grid-column:1;grid-row:1}
                 #calc .calc-btn[data-key="8"]{grid-column:2;grid-row:1}
                 #calc .calc-btn[data-key="9"]{grid-column:3;grid-row:1}
+                #calc .calc-op[data-op="/"]{grid-column:4;grid-row:1}
+                /* Fila 2: 4 5 6 × */
                 #calc .calc-btn[data-key="4"]{grid-column:1;grid-row:2}
                 #calc .calc-btn[data-key="5"]{grid-column:2;grid-row:2}
                 #calc .calc-btn[data-key="6"]{grid-column:3;grid-row:2}
+                #calc .calc-op[data-op="*"]{grid-column:4;grid-row:2}
+                /* Fila 3: 1 2 3 - */
                 #calc .calc-btn[data-key="1"]{grid-column:1;grid-row:3}
                 #calc .calc-btn[data-key="2"]{grid-column:2;grid-row:3}
                 #calc .calc-btn[data-key="3"]{grid-column:3;grid-row:3}
-                /* Fila inferior: 0 (ocupa 2 cols) . = */
-                #calc .calc-btn[data-key="0"]{grid-column:1 / span 2 !important;grid-row:4}
-                #calc .calc-btn[data-key="."]{grid-column:3;grid-row:4}
-                #calc #calc-eq{grid-column:4;grid-row:4}
+                #calc .calc-op[data-op="-"]{grid-column:4;grid-row:3}
+                /* Fila 4: 0 . = + */
+                #calc .calc-btn[data-key="0"]{grid-column:1 !important;grid-row:4}
+                #calc .calc-btn[data-key="."]{grid-column:2;grid-row:4}
+                #calc #calc-eq{grid-column:3;grid-row:4}
+                #calc .calc-op[data-op="+"]{grid-column:4;grid-row:4}
                 /* Acciones debajo siguen siendo responsivas */
                 .swal-reg .reg-actions{justify-content:stretch}
                 .swal-reg .btn-clear{flex:1}
@@ -164,6 +167,7 @@ async function openRegistroOperacion(){
             <button type="button" class="calc-btn" data-key="2">2</button>
             <button type="button" class="calc-btn" data-key="3">3</button>
             <button type="button" class="calc-op" data-op="*">×</button>
+            <button type="button" class="calc-op" data-op="/">÷</button>
             
             <button type="button" class="calc-btn" data-key="0" style="grid-column: span 2;">0</button>
             <button type="button" class="calc-btn" data-key=".">.</button>
@@ -174,7 +178,6 @@ async function openRegistroOperacion(){
             <button type="button" id="calc-back" class="btn-clear" style="background-color:#6b7280 !important; color:white;" title="Borrar un dígito">⌫</button>
             <button type="button" id="calc-clear" class="btn-clear" style="background-color:#d33 !important; color:white;">C</button>
         </div>
-        <small class="muted">Calculadora: Permite Suma (+), Resta (-), Multiplicación (×) e Igual (=)</small>
         <div>
         <div class="type-row" style="display:flex; gap:12px; align-items:center; margin-top:8px;">
             <label class="type-chip pago" style="cursor:pointer;">
@@ -344,6 +347,7 @@ async function openRegistroOperacion(){
                 if (op === '+') return '+';
                 if (op === '-') return '-';
                 if (op === '*') return '×';
+                if (op === '/') return '÷';
                 return '';
             }
 
@@ -363,6 +367,7 @@ async function openRegistroOperacion(){
                 if (op === '+') return first + second;
                 if (op === '-') return first - second;
                 if (op === '*') return first * second;
+                if (op === '/') return second === 0 ? first : first / second; // evita división por cero
 
                 return second; // Si no hay operador válido, devuelve el segundo operando.
             }
@@ -393,7 +398,7 @@ async function openRegistroOperacion(){
 
             function handleOperator(nextOperator) {
                 // Permitimos +, - y *
-                if (nextOperator !== '+' && nextOperator !== '-' && nextOperator !== '*') return;
+                if (nextOperator !== '+' && nextOperator !== '-' && nextOperator !== '*' && nextOperator !== '/') return;
 
                 const inputValue = parseFloat(currentDisplay);
 
