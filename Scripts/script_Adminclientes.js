@@ -795,7 +795,6 @@ async function eliminarDeudaIndiv(item, telefono){
         }
         const { error } = await del;
         if (error){ await showErrorToast('No se pudo eliminar la deuda: ' + error.message); return false; }
-        await restarDeuda_cliente(telefono, item.Monto)
         return true;
     }catch(err){
         console.error('Eliminar deuda indiv error', err);
@@ -814,60 +813,10 @@ async function eliminarDeudasCliente(telefono){
             .delete()
             .eq('Telefono_cliente', tel);
         if (error){ await showErrorToast('No se pudieron eliminar las deudas: ' + error.message); return false; }
-        await reiniciarDeudas(tel);
         return true;
     }catch(err){
         console.error('Eliminar todas deudas error', err);
         await showErrorToast('Error eliminando deudas');
         return false;
-    }
-}
-
-async function reiniciarDeudas(tele){
-    const tel = normalizePhone(tele || '');
-    if (!tel) return;
-    const { data, error } = await supabase
-        .from('Clientes')
-        .select('Deuda_Activa')
-        .eq('Telefono', tel)
-        .single();
-    if (error) {
-        showErrorToast('Error al obtener deuda activa: ' + error.message);
-        console.error('Error al obtener deuda activa', error);
-        return;
-    }
-    const nuevoDeuda = 0;
-    const { error: updateError } = await supabase
-        .from('Clientes')
-        .update({ Deuda_Activa: nuevoDeuda })
-        .eq('Telefono', tel);
-    if (updateError) {
-        showErrorToast('Error al actualizar deuda activa: ' + updateError.message);
-        console.error('Error al actualizar deuda activa', updateError);
-    }
-}
-
-async function restarDeuda_cliente(telefono, monto){
-    const tel = normalizePhone(telefono || currentClienteTelefono || '');
-    if (!tel) return;
-    const { data, error } = await supabase
-        .from('Clientes')
-        .select('Deuda_Activa')
-        .eq('Telefono', tel)
-        .single();
-    if (error) {
-        showErrorToast('Error al obtener deuda activa: ' + error.message);
-        console.error('Error al obtener deuda activa', error);
-        return;
-    }
-    const deudaActual = Number(data?.Deuda_Activa) || 0;
-    const nuevoDeuda = Math.max(0, deudaActual - (Number(monto) || 0));
-    const { error: updateError } = await supabase
-        .from('Clientes')
-        .update({ Deuda_Activa: nuevoDeuda })
-        .eq('Telefono', tel);
-    if (updateError) {
-        showErrorToast('Error al actualizar deuda activa: ' + updateError.message);
-        console.error('Error al actualizar deuda activa', updateError);
     }
 }
