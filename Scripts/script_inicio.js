@@ -193,6 +193,7 @@ async function openRegistroOperacion(){
     </div>
     `;
 
+    
     const result = await window.Swal.fire({
         title: 'Registrar Operación',
         html,
